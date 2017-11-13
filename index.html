@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movies</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/main.js"></script>
+</head>
+<body>
+<h2 id="pageTitle">Movies</h2>
+<div id="content" class="container-fluid">
+    <div id="moviesSearch" class="spacing">
+        <div id="recommendedMovies">
+            <h4>Recommended for you:</h4>
+            <span>-</span>
+        </div>
+        <form class="form-inline" id="searchForm" role="search" method="post">
+            <div class="form-group">
+                <input type="text" class="form-control" name="keyword" placeholder="Keyword">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+        <div id="errorSearchForm" class="alert alert-danger spacing" role="alert" style="display: none">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Error:</span>
+            <span id="errorSearchFormMessage"></span>
+        </div>
+
+        <div id="searchResults" class="container spacing" style="display: none">
+
+        </div>
+    </div>
+
+    <div id="movieDetails" style="display: none">
+        <div id="backButton" class="bk-btn">
+            <div class="bk-btn-triangle"></div>
+            <div class="bk-btn-bar"></div>
+        </div>
+        <h3 id="title"></h3>
+        <span id="genres"></span><br/><br/>
+        <div id="rating">
+            <div id="unrated">
+                <label>You haven't rated this movie yet</label>
+                <input type="hidden" id="mId">
+                <fieldset>
+                    <input onclick="submitRating(this)" onmouseout="unFillStars(this)" onmouseover="fillStars(this)"
+                           name="rating" class="unfilled-star" type="image" value="1" src="img/star_not_filled.png">
+                    <input onclick="submitRating(this)" onmouseout="unFillStars(this)" onmouseover="fillStars(this)"
+                           name="rating" class="unfilled-star" type="image" value="2" src="img/star_not_filled.png">
+                    <input onclick="submitRating(this)" onmouseout="unFillStars(this)" onmouseover="fillStars(this)"
+                           name="rating" class="unfilled-star" type="image" value="3" src="img/star_not_filled.png">
+                    <input onclick="submitRating(this)" onmouseout="unFillStars(this)" onmouseover="fillStars(this)"
+                           name="rating" class="unfilled-star" type="image" value="4" src="img/star_not_filled.png">
+                    <input onclick="submitRating(this)" onmouseout="unFillStars(this)" onmouseover="fillStars(this)"
+                           name="rating" class="unfilled-star" type="image" value="5" src="img/star_not_filled.png">
+                </fieldset>
+            </div>
+            <div id="rated">
+
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
