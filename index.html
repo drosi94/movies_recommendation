@@ -5,6 +5,14 @@
     <title>Movies</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/styles.css">
+
+    <script src="js/enums/HTTP_METHODS.js"></script>
+    <script src="js/enums/HTTP_STATUS.js"></script>
+    <script src="js/utilities/pearson-correlation.js"></script>
+    <script src="js/utilities/utils.js"></script>
+    <script src="js/classes/ajaxHttpCaller.js"></script>
+    <script src="js/classes/moviesApiCaller.js"></script>
+    <script src="js/movieRating.js"></script>
     <script src="js/main.js"></script>
 </head>
 <body>
@@ -56,9 +64,7 @@
                            name="rating" class="unfilled-star" type="image" value="5" src="img/star_not_filled.png">
                 </fieldset>
             </div>
-            <div id="rated">
-
-            </div>
+            <div id="rated"></div>
         </div>
     </div>
 </div>

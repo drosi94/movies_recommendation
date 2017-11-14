@@ -1,16 +1,26 @@
 'use strict';
 
+let movieCaller;
+let movieSearchDiv;
+let searchForm;
+let searchResultsDiv;
+let errorSearchFormDiv;
+let errorSearchFormMessage;
+let movieDetailsDiv;
+let backButton;
+
 window.onload = () => {
-    const movieCaller = new MoviesAPICaller();
 
-    const movieSearchDiv = document.getElementById('moviesSearch');
-    const searchForm = document.getElementById('searchForm');
-    const searchResultsDiv = document.getElementById('searchResults');
-    const errorSearchFormDiv = document.getElementById('errorSearchForm');
-    const errorSearchFormMessage = document.getElementById('errorSearchFormMessage');
+    movieCaller = new MoviesAPICaller();
+    movieSearchDiv = document.getElementById('moviesSearch');
+    searchForm = document.getElementById('searchForm');
+    searchResultsDiv = document.getElementById('searchResults');
+    errorSearchFormDiv = document.getElementById('errorSearchForm');
+    errorSearchFormMessage = document.getElementById('errorSearchFormMessage');
+    movieDetailsDiv = document.getElementById('movieDetails');
+    backButton = document.getElementById('backButton');
 
-    const movieDetailsDiv = document.getElementById('movieDetails');
-    const backButton = document.getElementById('backButton');
+    parseUrl();
 
     searchForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -35,8 +45,7 @@ window.onload = () => {
                 errorSearchFormMessage.appendChild(document.createTextNode(err));
             } else {
                 Utils.hideElement(errorSearchFormDiv);
-                Utils.showMovies(searchResultsDiv, movies);
-
+                showMovies(searchResultsDiv, movies);
                 let movieTitles = document.getElementsByClassName('movie-title');
                 for (let i = 0; i <= movieTitles.length - 1; i++) {
                     movieTitles[i].addEventListener('click', onClickMovie, false);
@@ -46,7 +55,7 @@ window.onload = () => {
     });
 
 
-    //Movie details
+    //Go to movie details
     const onClickMovie = (e) => {
         movieCaller.getMovieById(e.target.getAttribute('movie-id'), (err, movie) => {
             if (err) {
@@ -60,16 +69,75 @@ window.onload = () => {
     };
 
     backButton.addEventListener('click', (e) => {
-        document.title = 'Movies';
-        document.getElementById('pageTitle').innerHTML = 'Movies';
+        Utils.urlChange('movies', 'Movies', 'movies');
+        parseUrl();
         Utils.showElement(movieSearchDiv);
         Utils.hideElement(movieDetailsDiv);
     });
 };
 
+const parseUrl = () => {
+    let url = window.location.hash.substr(1);
+    if (url === '/movies' || url === '') {
+        Utils.showElement(movieSearchDiv);
+        Utils.hideElement(movieDetailsDiv);
+        Utils.urlChange('movies', 'Movies', 'movies');
+
+        const userRatings = Utils.getUserRatings();
+        if (userRatings && userRatings.length >= 2) {
+            showRecommendations(userRatings);
+        }
+
+    } else if ((url.startsWith('/movie/'))) {
+        Utils.hideElement(movieSearchDiv);
+        Utils.showElement(movieDetailsDiv);
+        movieCaller.getMovieById(url.substring(url.lastIndexOf('/') + 1, url.length), (err, movie) => {
+            if (err) {
+                alert('Error');
+            } else {
+                showMovieDetails(movie[0]);
+            }
+        });
+    }
+}
+
+const showMovies = (parentElement, movies) => {
+    Utils.removeAllChildsFromElement(parentElement);
+    Utils.showElement(parentElement);
+    let length = movies.length;
+    if (length > 20) {
+        length = 20; // Limit results
+    }
+
+    for (let i = 0; i <= length - 1; i++) {
+        let movieDiv = document.createElement('div');
+        movieDiv.id = `movie-${movies[i]['movieId']}`;
+        movieDiv.className += 'movie spacing';
+
+        let movieTitleSpan = document.createElement('span');
+        movieTitleSpan.appendChild(document.createTextNode(movies[i]['title']));
+        movieTitleSpan.className += 'movie-title';
+        movieTitleSpan.setAttribute('movie-id', movies[i]['movieId']);
+        movieDiv.appendChild(movieTitleSpan);
+
+        let genreSpan = document.createElement('span');
+        genreSpan.appendChild(document.createTextNode(movies[i]['genres']));
+        movieDiv.appendChild(genreSpan);
+
+        let hr = document.createElement('hr');
+
+        parentElement.appendChild(movieDiv);
+
+        if (i !== length - 1) {
+            parentElement.appendChild(hr);
+        }
+    }
+};
+
+
 const showMovieDetails = (movie) => {
-    document.title = 'Movie Details';
-    document.getElementById('pageTitle').innerHTML = 'Movie Details';
+    Utils.urlChange('movieDetails', 'Movie Details', `movie/${movie['movieId']}`);
+
     const title = document.getElementById('title');
     Utils.removeAllChildsFromElement(title);
     title.appendChild(document.createTextNode(movie['title']));
@@ -82,261 +150,46 @@ const showMovieDetails = (movie) => {
     showMovieUserRating(movie['movieId']);
 };
 
-//Rating
-const fillStars = (img) => {
-    const value = img.getAttribute('value');
-    const images = document.getElementsByClassName('unfilled-star');
-    for (let i = images.length - 1; i >= 0; i--) {
-        if (parseInt(images[i].getAttribute('value')) <= value) {
-            images[i].src = 'img/star_filled.png';
-            images[i].className = 'filled-star';
-        }
-    }
+const showRecommendations = (userRatings) => {
+    const recommendations = findRecommendations(userRatings);
 };
 
-const unFillStars = (img) => {
-    const value = img.getAttribute('value');
-    const images = document.getElementsByClassName('filled-star');
-    for (let i = images.length - 1; i >= 0; i--) {
-        if (parseInt(images[i].getAttribute('value')) <= value) {
-            images[i].src = 'img/star_not_filled.png';
-            images[i].className = 'unfilled-star';
-        }
-    }
-};
+const findRecommendations = (currentUserRatings) => {
+    if (currentUserRatings) {
+        const latestRecommendations = Utils.getLatestRecommendations();
+        const movieListRatings = currentUserRatings.map(it => it.mId);
+        if (latestRecommendations) {
 
-const submitRating = (img) => {
-    const mIdValue = document.getElementById('mId').value;
-    Utils.setUserRating(mIdValue, img.value);
-    showMovieUserRating(mIdValue);
-};
-
-const showMovieUserRating = (mId) => {
-    const unratedDiv = document.getElementById('unrated');
-    const ratedDiv = document.getElementById('rated');
-
-    const ratings = Utils.getUserRatings();
-    console.log(ratings);
-
-    const movieRating = ratings ? ratings.filter(userRating => userRating.mId === mId.toString()) : null;
-    if (movieRating && movieRating.length > 0) {
-        console.log(movieRating);
-        Utils.hideElement(unratedDiv);
-        Utils.showElement(ratedDiv);
-
-        Utils.removeAllChildsFromElement(ratedDiv);
-        for (let i = 0; i < movieRating[0].rating; i++) {
-            const starImg = document.createElement('img');
-            starImg.src = 'img/star_filled.png';
-            starImg.className = 'filled-star';
-
-            ratedDiv.appendChild(starImg);
-        }
-    } else {
-        Utils.showElement(unratedDiv);
-        Utils.hideElement(ratedDiv);
-    }
-};
-
-//
-
-
-//CLASSES / ENUMS
-const AjaxHttpCaller = class {
-    /**
-     * Create a new AjaxHttpCaller object for sending ajax requests (GET OR POST) to a specific API url
-     * @param apiUrl, The API url to send the requests. If null, use default http://62.217.127.19:8010
-     */
-    constructor(apiUrl) {
-        if (apiUrl) {
-            this.API_URL = apiUrl;
-        } else {
-            this.API_URL = 'http://62.217.127.19:8010';
-        }
-
-        this.xmlHttp = new XMLHttpRequest();
-    }
-
-    /**
-     * Send the API request
-     * @param method, GET OR POST
-     * @param endpoint, the endpoint of api url to send request
-     * @param data, the data to send with request
-     * @param callback, the callback to call when ajax state is done
-     */
-    sendRequest(method, endpoint, data, callback) {
-        this.xmlHttp.onreadystatechange = this.onReadyChange(callback);
-
-        if (method === HTTP_METHODS.GET) {
-            return this.ajaxRequestGet(endpoint);
-        } else if (method === HTTP_METHODS.POST) {
-            return this.ajaxRequestPost(endpoint, data);
-        } else {
-            throw new Error('Method not defined');
-        }
-
-    };
-
-    ajaxRequestGet(endpoint) {
-        this.xmlHttp.open('GET', `${this.API_URL}/${endpoint}`, true);
-        this.xmlHttp.setRequestHeader('Accept', 'application/json');
-        this.xmlHttp.send(null);
-    };
-
-    ajaxRequestPost(endpoint, data) {
-        this.xmlHttp.open('POST', `${this.API_URL}/${endpoint}`, true);
-        this.xmlHttp.setRequestHeader('Accept', 'application/json');
-        this.xmlHttp.setRequestHeader('Content-Type', 'application/json');
-        this.xmlHttp.send(data ? JSON.stringify(data) : null);
-    };
-
-    onReadyChange(callback) {
-        return () => {
-            try {
-                if (this.xmlHttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
-                    if (this.xmlHttp.status === HTTP_STATUS.OK || this.xmlHttp.status === HTTP_STATUS.CREATED) {
-                        return callback(null, JSON.parse(this.xmlHttp.responseText))
-                    } else if (this.xmlHttp.status === HTTP_STATUS.NOT_FOUND) {
-                        return callback('Resource not found');
-                    } else if (this.xmlHttp.status === HTTP_STATUS.BAD_REQUEST) {
-                        return callback('Bad request');
-                    } else if (this.xmlHttp.status === HTTP_STATUS.SERVER_ERROR) {
-                        return callback('Server Error');
-                    } else {
-                        return callback('Something very bad happened');
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-                return callback('Something very bad happened');
-            }
-        };
-
-    };
-};
-
-const MoviesAPICaller = class extends AjaxHttpCaller {
-    constructor(apiUrl) {
-        super(apiUrl);
-    }
-
-    getMoviesByKeyword(keyword, cb) {
-        const data = {
-            keyword: keyword
-        };
-
-        super.sendRequest(HTTP_METHODS.POST, 'movie', data, cb);
-    };
-
-
-    getMovieById(id, cb) {
-        super.sendRequest(HTTP_METHODS.GET, `movie/${id}`, null, cb);
-    };
-
-
-    getRatingsByMovies(movieList, cb) {
-        const data = {
-            movieList: movieList
-        };
-        super.sendRequest(HTTP_METHODS.POST, 'ratings', data, cb);
-    };
-
-    getRatingsByUserId(userId, cb) {
-        super.sendRequest(HTTP_METHODS.GET, `ratings/${userId}`, null, cb);
-    };
-};
-
-const UserRating = class {
-    constructor(mId, rating) {
-        this.mId = mId;
-        this.rating = rating;
-    }
-};
-
-const Utils = class {
-    static hideElement(element) {
-        element.style.display = 'none';
-    }
-
-
-    static showElement(element) {
-        element.style.display = 'block';
-    }
-
-    static removeAllChildsFromElement(element) {
-        while (element.firstChild) {
-            element.removeChild(element.firstChild);
-        }
-    }
-
-    static setUserRating(mId, value) {
-        let userRatings = Utils.getUserRatings();
-        if (!userRatings) {
-            userRatings = [];
-        }
-        userRatings.push(new UserRating(mId, value));
-        console.log(userRatings);
-        console.log(JSON.stringify(userRatings));
-        localStorage.setItem('userRatings', JSON.stringify(userRatings));
-    }
-
-    static getUserRatings() {
-        let userRatings = localStorage.getItem('userRatings');
-        if (userRatings) {
-            userRatings = JSON.parse(userRatings);
-            return userRatings;
-        } else {
-            return null;
-        }
-    }
-
-    static showMovies(parentElement, movies) {
-        this.removeAllChildsFromElement(parentElement);
-        this.showElement(parentElement);
-        let length = movies.length;
-        if (length > 20) {
-            length = 20; // Limit results
-        }
-
-        for (let i = 0; i <= length - 1; i++) {
-            let movieDiv = document.createElement('div');
-            movieDiv.id = `movie-${movies[i]['movieId']}`;
-            movieDiv.className += 'movie spacing';
-
-            let movieTitleSpan = document.createElement('span');
-            movieTitleSpan.appendChild(document.createTextNode(movies[i]['title']));
-            movieTitleSpan.className += 'movie-title';
-            movieTitleSpan.setAttribute('movie-id', movies[i]['movieId']);
-            movieDiv.appendChild(movieTitleSpan);
-
-            let genreSpan = document.createElement('span');
-            genreSpan.appendChild(document.createTextNode(movies[i]['genres']));
-            movieDiv.appendChild(genreSpan);
-
-            let hr = document.createElement('hr');
-
-            parentElement.appendChild(movieDiv);
-
-            if (i !== length - 1) {
-                parentElement.appendChild(hr);
+            if (Utils.arraysEqual(latestRecommendations.movieList, movieListRatings)) {
+                return latestRecommendations;
             }
         }
+
+        movieCaller.getRatingsByMovies(movieListRatings, (err, moviesRatings) => {
+           if (err) {
+               console.error(err);
+           } else {
+               //GROUP BY ratings by userId
+               const moviesRatingsByUser = moviesRatings.reduce(function(groups, item) {
+                   let val = item['userId'];
+                   groups[val] = groups[val] || [];
+                   groups[val].push(item);
+                   return groups;
+               }, {});
+
+               Object.keys(moviesRatingsByUser).forEach(function(userId){
+                   console.log(userId);
+                   currentUserRatings = currentUserRatings.map(it => it.rating);
+                   const userRatings = moviesRatingsByUser[userId].map(it => it.rating);
+
+                   const score = pearsonCorrelation({
+                       currentUserRatings: currentUserRatings,
+                       userRatings: userRatings
+                   }, 'currentUserRatings', 'userRatings');
+
+                   console.log(score);
+               });
+           }
+        });
     }
 };
-
-
-// Enums at js ES6 -> http://2ality.com/2016/01/enumify.html
-const HTTP_METHODS = Object.freeze({
-    GET: 'GET',
-    POST: 'POST'
-});
-
-const HTTP_STATUS = Object.freeze({
-    OK: 200,
-    CREATED: 201,
-    NOT_FOUND: 404,
-    BAD_REQUEST: 400,
-    UNAUTHORIZED: 401,
-    FORBIDDEN: 403,
-    SERVER_ERROR: 500
-});
