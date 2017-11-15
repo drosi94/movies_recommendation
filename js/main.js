@@ -86,8 +86,8 @@ const parseUrl = () => {
             }
         } else {
             const userRatings = Utils.getUserRatings();
-            if (userRatings && userRatings.length >= 2) {
-                showRecommendations(userRatings);
+            if (userRatings && userRatings.length > 2) {
+                showRecommendations(document.getElementById('recommendedMovies'), userRatings);
             }
         }
 
@@ -174,21 +174,44 @@ const showMovieDetails = (movie) => {
     }
 };
 
-const showRecommendations = (userRatings) => {
-    const recommendations = findRecommendations(userRatings);
+const showRecommendations = (parentElement, userRatings) => {
+    Utils.removeAllChildsFromElement(parentElement);
+    findRecommendations(userRatings, (recommendations) => {
+        console.log(recommendations);
+        let i = 0;
+        const moviesDiv = document.createElement('div');
+        const loopArray = (recommendations) => {
+            getMovieTitle(recommendations[i], (title) => {
+                const titleSpan = document.createElement('span');
+                titleSpan.className += 'movie-title';
+                titleSpan.appendChild(document.createTextNode(title));
+                titleSpan.setAttribute('movie-id', recommendations[i]);
+                titleSpan.addEventListener('click', onClickMovie, false);
+                moviesDiv.appendChild(titleSpan);
+                i++;
+                if (i < recommendations.length) {
+                    loopArray(recommendations);
+                } else {
+                    parentElement.appendChild(moviesDiv);
+                }
+            })
+        };
+
+        loopArray(recommendations);
+    });
 };
 
-const findRecommendations = (currentUserRatings) => {
+const findRecommendations = (currentUserRatings, cb) => {
     if (currentUserRatings) {
         const latestRecommendations = Utils.getLatestRecommendations();
         const movieListRatings = currentUserRatings.map(it => it.mId);
-        if (latestRecommendations) {
 
-            if (Utils.arraysEqual(latestRecommendations.movieList, movieListRatings)) {
-                return latestRecommendations;
-            }
+        // If latestRecommendations object is already defined and current user rating are not changed, return the saved object
+        if (latestRecommendations && Utils.arraysEqual(latestRecommendations.movieList, movieListRatings)) {
+            return cb(latestRecommendations.recommendations);
         }
 
+        // else find recommendations by similarity
         movieCaller.getRatingsByMovies(movieListRatings, (err, moviesRatings) => {
             if (err) {
                 console.error(err);
@@ -202,24 +225,78 @@ const findRecommendations = (currentUserRatings) => {
                 }, {});
 
                 currentUserRatings = currentUserRatings.map((it) => parseFloat(it.rating));
+                const scorePerUserId = [];
                 Object.keys(moviesRatingsByUser).forEach(function (userId) {
-                    if (moviesRatingsByUser[userId] && moviesRatingsByUser[userId].length > 0) {
-                        if (moviesRatingsByUser[userId].length >= 2) {
-                            console.log('ela re man')
-                        }
+                    if (moviesRatingsByUser[userId] && moviesRatingsByUser[userId].length > 0 && currentUserRatings.length - moviesRatingsByUser[userId].length <= 2) {
                         const userRatings = moviesRatingsByUser[userId].map((it) => parseFloat(it.rating));
 
                         const score = pearsonCorrelation([currentUserRatings, userRatings], 0, 1);
-
-                        console.log(score);
+                        scorePerUserId.push({
+                            userId: userId,
+                            score: score
+                        });
                     }
-
                 });
+                // GET N most similar with current user
+                const similarUserRatings = Utils.sortArrayByKey(scorePerUserId, 'score', true).slice(0, 3);
+
+                getMovieRecommendationsByUsers(similarUserRatings, movieListRatings, (moviesForRecommendation => {
+                    // Get first 4 movies for recommendations
+                    moviesForRecommendation = Utils.sortArrayByKey(moviesForRecommendation, 'rating', false).slice(0, 4);
+                    moviesForRecommendation = moviesForRecommendation.map((movieRec) => movieRec['movieId']);
+                    Utils.setLatestRecommendations(movieListRatings, moviesForRecommendation);
+                    return cb(moviesForRecommendation);
+                }))
+
             }
         });
     }
+
+};
+const getMovieRecommendationsByUsers = (similarUserRatings, movieListRatings, cb) => {
+    let moviesForRecommendation = [];
+
+    let i = 0;
+    const loopArray = (similarUserRatings) => {
+        getMovieRecommendations(similarUserRatings[i], movieListRatings, (moviesUserRecommendation) => {
+            moviesForRecommendation = moviesForRecommendation.concat(moviesUserRecommendation);
+            i++;
+            if (i < similarUserRatings.length) {
+                loopArray(similarUserRatings);
+            } else {
+                return cb(moviesForRecommendation);
+            }
+        })
+    };
+
+    loopArray(similarUserRatings);
 };
 
-window.onunload = (e) => {
-    this.localStorage.removeItem('latestResults')
-}
+
+const getMovieRecommendations = (userRating, movieListRatings, cb) => {
+    const moviesUserRecommendation = [];
+    movieCaller.getRatingsByUserId(userRating.userId, (err, movieRatings) => {
+        if (err) {
+            console.error(err);
+        } else {
+            movieRatings.forEach((movieRating) => {
+                if (movieRating.rating >= 4 && !movieListRatings.includes(movieRating.movieId) && !movieRatings.includes(movieRating.movieId)) {
+                    moviesUserRecommendation.push(movieRating);
+                }
+            });
+
+            return cb(moviesUserRecommendation);
+        }
+    });
+};
+
+
+const getMovieTitle = (movieId, cb) => {
+    movieCaller.getMovieById(movieId, (err, movie) => {
+        if(err) {
+            console.error(err);
+        } else {
+            cb(movie[0].title);
+        }
+    });
+};

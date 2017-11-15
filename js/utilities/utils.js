@@ -80,6 +80,10 @@ class Utils {
     }
 
     static arraysEqual(a1, a2) {
-        a1.length === a2.length && a1.every((v, i) => v === a2[i])
+        return a1.length === a2.length && a1.every((v, i) => v === a2[i])
+    }
+
+    static sortArrayByKey(array, key, asc) {
+        return array.sort((a, b) => ( asc ? a[key] - b[key] : b[key] - a[key]));
     }
 }
