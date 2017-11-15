@@ -8,6 +8,7 @@ body {
 }
 
 span.movie-title {
+    font-size: 18px;
     text-decoration: underline;
     cursor: pointer;
     display: block;

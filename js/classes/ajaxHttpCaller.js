@@ -51,7 +51,7 @@ class AjaxHttpCaller {
             try {
                 if (this.xmlHttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
                     if (this.xmlHttp.status === HTTP_STATUS.OK || this.xmlHttp.status === HTTP_STATUS.CREATED) {
-                        return callback(null, JSON.parse(this.xmlHttp.responseText))
+                        return callback(null, JSON.parse(this.xmlHttp.responseText)) // No error occurred, pass object
                     } else if (this.xmlHttp.status === HTTP_STATUS.NOT_FOUND) {
                         return callback('Resource not found');
                     } else if (this.xmlHttp.status === HTTP_STATUS.BAD_REQUEST) {
@@ -69,4 +69,4 @@ class AjaxHttpCaller {
         };
 
     };
-};
+}

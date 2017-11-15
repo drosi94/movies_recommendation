@@ -1,12 +1,12 @@
-class UserRating{
+class UserRating {
     constructor(mId, rating) {
         this.mId = mId;
         this.rating = rating;
     }
 }
 
-const fillStars = (img) => {
-    const value = img.getAttribute('value');
+const fillStars = (e) => {
+    const value = e.target.getAttribute('value');
     const images = document.getElementsByClassName('unfilled-star');
     for (let i = images.length - 1; i >= 0; i--) {
         if (parseInt(images[i].getAttribute('value')) <= value) {
@@ -16,8 +16,8 @@ const fillStars = (img) => {
     }
 };
 
-const unFillStars = (img) => {
-    const value = img.getAttribute('value');
+const unFillStars = (e) => {
+    const value = e.target.getAttribute('value');
     const images = document.getElementsByClassName('filled-star');
     for (let i = images.length - 1; i >= 0; i--) {
         if (parseInt(images[i].getAttribute('value')) <= value) {
@@ -27,9 +27,9 @@ const unFillStars = (img) => {
     }
 };
 
-const submitRating = (img) => {
+const submitRating = (e) => {
     const mIdValue = document.getElementById('mId').value;
-    Utils.setUserRating(mIdValue, img.value);
+    Utils.setUserRating(mIdValue, e.target.value);
     showMovieUserRating(mIdValue);
 };
 

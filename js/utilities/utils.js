@@ -59,6 +59,26 @@ class Utils {
         }
     }
 
+    static setLatestResults(keyword, movies) {
+        let latestResults = {
+            keyword: keyword,
+            movies: movies
+        };
+
+        localStorage.setItem('latestResults', JSON.stringify(latestResults));
+    }
+
+
+    static getLatestResults() {
+        let latestResults = localStorage.getItem('latestResults');
+        if (latestResults) {
+            latestResults = JSON.parse(latestResults);
+            return latestResults;
+        } else {
+            return null;
+        }
+    }
+
     static arraysEqual(a1, a2) {
         a1.length === a2.length && a1.every((v, i) => v === a2[i])
     }
