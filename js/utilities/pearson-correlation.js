@@ -1,59 +1,42 @@
-/**
- *  @fileoverview Pearson correlation score algorithm.
- *  @author matt.west@kojilabs.com (Matt West)
- *  @license Copyright 2013 Matt West.
- *  Licensed under MIT (http://opensource.org/licenses/MIT).
- */
+function getPearsonCorrelation(x, y) {
+    let shortestArrayLength = 0;
 
-
-/**
- *  Calculate the person correlation score between two items in a dataset.
- *
- *  @param prefs The dataset containing data about both items that
- *                    are being compared.
- *  @param p1 Item one for comparison.
- *  @param p2 Item two for comparison.
- *  @return he pearson correlation score.
- */
-function pearsonCorrelation(prefs, p1, p2) {
-    let si = [];
-
-    for (let key in prefs[p1]) {
-        if (prefs[p2][key]) si.push(key);
+    if (x.length === y.length) {
+        shortestArrayLength = x.length;
+    } else if (x.length > y.length) {
+        shortestArrayLength = y.length;
+    } else {
+        shortestArrayLength = x.length;
     }
 
-    let n = si.length;
+    let xy = [];
+    let x2 = [];
+    let y2 = [];
 
-    if (n === 0) return 0;
-
-    let sum1 = 0;
-    for (let i = 0; i < si.length; i++) sum1 += prefs[p1][si[i]];
-
-    let sum2 = 0;
-    for (let i = 0; i < si.length; i++) sum2 += prefs[p2][si[i]];
-
-    let sum1Sq = 0;
-    for (let i = 0; i < si.length; i++) {
-        sum1Sq += Math.pow(prefs[p1][si[i]], 2);
+    for (let i = 0; i < shortestArrayLength; i++) {
+        xy.push(x[i] * y[i]);
+        x2.push(x[i] * x[i]);
+        y2.push(y[i] * y[i]);
     }
 
-    let sum2Sq = 0;
-    for (let i = 0; i < si.length; i++) {
-        sum2Sq += Math.pow(prefs[p2][si[i]], 2);
+    let sum_x = 0;
+    let sum_y = 0;
+    let sum_xy = 0;
+    let sum_x2 = 0;
+    let sum_y2 = 0;
+
+    for (let i = 0; i < shortestArrayLength; i++) {
+        sum_x += x[i];
+        sum_y += y[i];
+        sum_xy += xy[i];
+        sum_x2 += x2[i];
+        sum_y2 += y2[i];
     }
 
-    let pSum = 0;
-    for (let i = 0; i < si.length; i++) {
-        pSum += prefs[p1][si[i]] * prefs[p2][si[i]];
-    }
+    let step1 = (shortestArrayLength * sum_xy) - (sum_x * sum_y);
+    let step2 = (shortestArrayLength * sum_x2) - (sum_x * sum_x);
+    let step3 = (shortestArrayLength * sum_y2) - (sum_y * sum_y);
+    let step4 = Math.sqrt(step2 * step3);
 
-    let num = pSum - (sum1 * sum2 / n);
-    let den = Math.sqrt((sum1Sq - Math.pow(sum1, 2) / n) *
-        (sum2Sq - Math.pow(sum2, 2) / n));
-
-    if (den === 0) return 0;
-
-    return num / den;
+    return step1 / step4;
 }
-
-//SOURCE: https://gist.github.com/matt-west/6500993

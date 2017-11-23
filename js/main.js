@@ -9,30 +9,27 @@ let errorSearchFormMessage;
 let movieDetailsDiv;
 let backButton;
 
-window.onload = () => {
+let recommendationWorker;
+
+
+const onLoad = () => {
 
     movieCaller = new MoviesAPICaller();
-    movieSearchDiv = document.getElementById('moviesSearch');
-    searchForm = document.getElementById('searchForm');
-    searchResultsDiv = document.getElementById('searchResults');
-    errorSearchFormDiv = document.getElementById('errorSearchForm');
-    errorSearchFormMessage = document.getElementById('errorSearchFormMessage');
-    movieDetailsDiv = document.getElementById('movieDetails');
-    backButton = document.getElementById('backButton');
+    if(!recommendationWorker) {
+        recommendationWorker = new Worker('/movies_recommendation/js/worker/recommendation_worker.js');
+    }
 
+    initializeViewElements();
     parseUrl();
 
     searchForm.addEventListener('submit', submitSearchForm);
-
-    backButton.addEventListener('click', (e) => {
-        Utils.urlChange('movies', 'Movies', 'movies');
-        parseUrl();
-        Utils.showElement(movieSearchDiv);
-        Utils.hideElement(movieDetailsDiv);
-    });
+    backButton.addEventListener('click', onBackClick);
 
     const latestResults = Utils.getLatestResults();
+    // Cache previous results, to prevent API Call
     if (latestResults) {
+        Utils.urlChange('movies', 'Movies', 'movies?search=' + latestResults.keyword);
+        document.getElementsByName('keyword')[0].value = latestResults.keyword;
         showMovies(searchResultsDiv, latestResults.movies);
     }
 };
@@ -54,6 +51,7 @@ const submitSearchForm = (e) => {
     getMovies(keyword)
 };
 
+// Get movies by keyword and show the result
 const getMovies = (keyword) => {
     Utils.urlChange('movies', 'Movies', 'movies?search=' + keyword);
     // Search movies by keyword
@@ -71,39 +69,7 @@ const getMovies = (keyword) => {
     });
 };
 
-const parseUrl = () => {
-    let url = window.location.hash.substr(1);
-    if (url.includes('/movies') || url === '') {
-        Utils.showElement(movieSearchDiv);
-        Utils.hideElement(movieDetailsDiv);
-        Utils.urlChange('movies', 'Movies', 'movies');
-
-        if (url.includes('?search=') > 0) {
-            const keyword = url.substring(url.lastIndexOf('?search=') + 8, url.length);
-            if (keyword.length > 2) {
-                document.getElementsByName('keyword')[0].value = keyword;
-                getMovies(keyword);
-            }
-        } else {
-            const userRatings = Utils.getUserRatings();
-            if (userRatings && userRatings.length > 2) {
-                showRecommendations(document.getElementById('recommendedMovies'), userRatings);
-            }
-        }
-
-    } else if ((url.startsWith('/movie/'))) {
-        Utils.hideElement(movieSearchDiv);
-        Utils.showElement(movieDetailsDiv);
-        movieCaller.getMovieById(url.substring(url.lastIndexOf('/') + 1, url.length), (err, movie) => {
-            if (err) {
-                alert('Error');
-            } else {
-                showMovieDetails(movie[0]);
-            }
-        });
-    }
-};
-
+// Show movies in parentElement
 const showMovies = (parentElement, movies) => {
     Utils.removeAllChildsFromElement(parentElement);
     Utils.showElement(parentElement);
@@ -139,7 +105,7 @@ const showMovies = (parentElement, movies) => {
     }
 };
 
-//Go to movie details
+//Go to movie details when click on a movie title
 const onClickMovie = (e) => {
     movieCaller.getMovieById(e.target.getAttribute('movie-id'), (err, movie) => {
         if (err) {
@@ -178,26 +144,18 @@ const showRecommendations = (parentElement, userRatings) => {
     Utils.removeAllChildsFromElement(parentElement);
     findRecommendations(userRatings, (recommendations) => {
         console.log(recommendations);
-        let i = 0;
         const moviesDiv = document.createElement('div');
-        const loopArray = (recommendations) => {
-            getMovieTitle(recommendations[i], (title) => {
-                const titleSpan = document.createElement('span');
-                titleSpan.className += 'movie-title';
-                titleSpan.appendChild(document.createTextNode(title));
-                titleSpan.setAttribute('movie-id', recommendations[i]);
-                titleSpan.addEventListener('click', onClickMovie, false);
-                moviesDiv.appendChild(titleSpan);
-                i++;
-                if (i < recommendations.length) {
-                    loopArray(recommendations);
-                } else {
-                    parentElement.appendChild(moviesDiv);
-                }
-            })
-        };
+        recommendations.forEach(rec => {
+            const titleSpan = document.createElement('span');
+            titleSpan.className += 'movie-title';
+            titleSpan.appendChild(document.createTextNode(rec.title));
+            titleSpan.setAttribute('movie-id', rec.mId);
+            titleSpan.addEventListener('click', onClickMovie, false);
+            moviesDiv.appendChild(titleSpan);
+        });
 
-        loopArray(recommendations);
+        parentElement.appendChild(moviesDiv);
+
     });
 };
 
@@ -211,92 +169,68 @@ const findRecommendations = (currentUserRatings, cb) => {
             return cb(latestRecommendations.recommendations);
         }
 
-        // else find recommendations by similarity
-        movieCaller.getRatingsByMovies(movieListRatings, (err, moviesRatings) => {
-            if (err) {
-                console.error(err);
-            } else {
-                //GROUP BY ratings by userId
-                const moviesRatingsByUser = moviesRatings.reduce(function (groups, item) {
-                    let val = item['userId'];
-                    groups[val] = groups[val] || [];
-                    groups[val].push(item);
-                    return groups;
-                }, {});
-
-                currentUserRatings = currentUserRatings.map((it) => parseFloat(it.rating));
-                const scorePerUserId = [];
-                Object.keys(moviesRatingsByUser).forEach(function (userId) {
-                    if (moviesRatingsByUser[userId] && moviesRatingsByUser[userId].length > 0 && currentUserRatings.length - moviesRatingsByUser[userId].length <= 2) {
-                        const userRatings = moviesRatingsByUser[userId].map((it) => parseFloat(it.rating));
-
-                        const score = pearsonCorrelation([currentUserRatings, userRatings], 0, 1);
-                        scorePerUserId.push({
-                            userId: userId,
-                            score: score
-                        });
-                    }
-                });
-                // GET N most similar with current user
-                const similarUserRatings = Utils.sortArrayByKey(scorePerUserId, 'score', true).slice(0, 3);
-
-                getMovieRecommendationsByUsers(similarUserRatings, movieListRatings, (moviesForRecommendation => {
-                    // Get first 4 movies for recommendations
-                    moviesForRecommendation = Utils.sortArrayByKey(moviesForRecommendation, 'rating', false).slice(0, 4);
-                    moviesForRecommendation = moviesForRecommendation.map((movieRec) => movieRec['movieId']);
-                    Utils.setLatestRecommendations(movieListRatings, moviesForRecommendation);
-                    return cb(moviesForRecommendation);
-                }))
-
-            }
-        });
+        recommendationWorker.postMessage(JSON.stringify({
+            movieListRatings: movieListRatings,
+            currentUserRatings: currentUserRatings
+        }));
+        recommendationWorker.onmessage = (e) => {
+            Utils.setLatestRecommendations(movieListRatings, e.data);
+            return cb(e.data);
+        }
     }
 
 };
-const getMovieRecommendationsByUsers = (similarUserRatings, movieListRatings, cb) => {
-    let moviesForRecommendation = [];
 
-    let i = 0;
-    const loopArray = (similarUserRatings) => {
-        getMovieRecommendations(similarUserRatings[i], movieListRatings, (moviesUserRecommendation) => {
-            moviesForRecommendation = moviesForRecommendation.concat(moviesUserRecommendation);
-            i++;
-            if (i < similarUserRatings.length) {
-                loopArray(similarUserRatings);
-            } else {
-                return cb(moviesForRecommendation);
+
+const initializeViewElements = () => {
+    movieSearchDiv = document.getElementById('moviesSearch');
+    searchForm = document.getElementById('searchForm');
+    searchResultsDiv = document.getElementById('searchResults');
+    errorSearchFormDiv = document.getElementById('errorSearchForm');
+    errorSearchFormMessage = document.getElementById('errorSearchFormMessage');
+    movieDetailsDiv = document.getElementById('movieDetails');
+    backButton = document.getElementById('backButton');
+};
+
+const onBackClick = (e) => {
+    Utils.urlChange('movies', 'Movies', 'movies');
+    parseUrl();
+    Utils.showElement(movieSearchDiv);
+    Utils.hideElement(movieDetailsDiv);
+};
+
+
+const parseUrl = () => {
+    let url = window.location.hash.substr(1);
+    if (url.includes('/movies') || url === '') {
+        Utils.showElement(movieSearchDiv);
+        Utils.hideElement(movieDetailsDiv);
+        Utils.urlChange('movies', 'Movies', 'movies');
+        const userRatings = Utils.getUserRatings();
+        // If user has rated at least 3 movies, show recommendations
+        if (userRatings && userRatings.length > 3) {
+            showRecommendations(document.getElementById('recommendedMovies'), userRatings);
+        }
+
+        if (url.includes('?search=') > 0) {
+            const keyword = url.substring(url.lastIndexOf('?search=') + 8, url.length);
+            if (keyword.length > 2) {
+                document.getElementsByName('keyword')[0].value = keyword;
+                getMovies(keyword);
             }
-        })
-    };
-
-    loopArray(similarUserRatings);
-};
-
-
-const getMovieRecommendations = (userRating, movieListRatings, cb) => {
-    const moviesUserRecommendation = [];
-    movieCaller.getRatingsByUserId(userRating.userId, (err, movieRatings) => {
-        if (err) {
-            console.error(err);
-        } else {
-            movieRatings.forEach((movieRating) => {
-                if (movieRating.rating >= 4 && !movieListRatings.includes(movieRating.movieId) && !movieRatings.includes(movieRating.movieId)) {
-                    moviesUserRecommendation.push(movieRating);
-                }
-            });
-
-            return cb(moviesUserRecommendation);
         }
-    });
+
+    } else if (url.startsWith('/movie/')) {
+        Utils.hideElement(movieSearchDiv);
+        Utils.showElement(movieDetailsDiv);
+        movieCaller.getMovieById(url.substring(url.lastIndexOf('/') + 1, url.length), (err, movie) => {
+            if (err) {
+                alert('Error');
+            } else {
+                showMovieDetails(movie[0]);
+            }
+        });
+    }
 };
 
-
-const getMovieTitle = (movieId, cb) => {
-    movieCaller.getMovieById(movieId, (err, movie) => {
-        if(err) {
-            console.error(err);
-        } else {
-            cb(movie[0].title);
-        }
-    });
-};
+window.onload = onLoad;
