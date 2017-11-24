@@ -1,6 +1,7 @@
 class UserRating {
-    constructor(mId, rating) {
+    constructor(mId, title, rating) {
         this.mId = mId;
+        this.title = title;
         this.rating = rating;
     }
 }
@@ -29,7 +30,8 @@ const unFillStars = (e) => {
 
 const submitRating = (e) => {
     const mIdValue = document.getElementById('mId').value;
-    Utils.setUserRating(mIdValue, e.target.value);
+    const title = document.getElementById('title').innerText;
+    Utils.setUserRating(mIdValue, title, e.target.value);
     showMovieUserRating(mIdValue);
 };
 
@@ -56,4 +58,9 @@ const showMovieUserRating = (mId) => {
         Utils.showElement(unratedDiv);
         Utils.hideElement(ratedDiv);
     }
+};
+
+const onDeleteRating = (e) => {
+    Utils.removeNode(e.target.parentNode.parentNode); // Remove tr
+    Utils.removeFromUserRatings(e.target.getAttribute("movie-id"));
 };

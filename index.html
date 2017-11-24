@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
     <title>Movies</title>
-    <link rel="stylesheet" href="css/bootstrap.min.css">
+
+    <!--CSS-->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css"
+          integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.4.3/css/mdb.min.css">
     <link rel="stylesheet" href="css/styles.css">
 
+    <!--FONT-->
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <!--Favico-->
+    <link rel="shortcut icon" href="img/movies.ico"/>
+
+    <!--JS-->
+    <!--Font icons-->
+    <script src="https://use.fontawesome.com/222289da4e.js"></script>
     <script src="js/enums/HTTP_METHODS.js"></script>
     <script src="js/enums/HTTP_STATUS.js"></script>
     <script src="js/utilities/pearson-correlation.js"></script>
@@ -16,51 +29,90 @@
     <script src="js/main.js"></script>
 </head>
 <body>
+<header>
+    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-blue scrolling-navbar">
+        <a class="navbar-brand" name="showMoviesLink" href="#/movies">Movies Recommendation</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" name="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" name="showMoviesLink" href="#/movies">Movies</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="showMyRatingsLink" href="#/my-ratings">My ratings</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>
 <h2 id="pageTitle">Movies</h2>
+
 <div id="content" class="container-fluid">
     <div id="moviesSearch" class="spacing">
-        <h4>Recommended movies: </h4>
-        <div id="recommendedMovies">
-
+        <div id="recommendationDiv" style="display: none">
+            <h4>Recommended movies: </h4>
+            <span id="loadingRecommendedMovies" style="display: none">
+                <i class="fa fa-spinner fa-spin" style="font-size:24px"></i>
+            </span>
+            <table class="table" id="recommendedMovies">
+            </table>
         </div>
+        <h4>Search Movies</h4>
         <form class="form-inline spacing" id="searchForm" role="search" method="post">
-            <div class="form-group">
-                <input type="text" class="form-control" name="keyword" placeholder="Keyword">
+            <div class="md-form form-group">
+                <i class="glyphicon glyphicon-film"></i>
+                <input type="text" class="form-control animated slideInDown" id="keyword" name="keyword"
+                       placeholder="Keyword">
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <div class="md-form form-group">
+                <button type="submit" class="btn btn-primary animated slideInRight">Submit</button>
+            </div>
         </form>
-        <div id="errorSearchForm" class="alert alert-danger spacing" role="alert" style="display: none">
+        <div id="errorSearchForm" class="alert alert-danger spacing animated fadeInUp" role="alert"
+             style="display: none">
             <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
             <span class="sr-only">Error:</span>
             <span id="errorSearchFormMessage"></span>
         </div>
 
-        <div id="searchResults" class="container spacing" style="display: none">
-
+        <div id="searchResults" class="spacing animated slideInUp" style="display: none">
+            <table class="table" id="searchTableResult">
+            </table>
         </div>
     </div>
-
-    <div id="movieDetails" style="display: none">
-        <div id="backButton" class="bk-btn">
-            <div class="bk-btn-triangle"></div>
-            <div class="bk-btn-bar"></div>
-        </div>
+    <div id="movieDetails" class="animate fadeIn" style="display: none">
+        <a id="backButton" href="#/movies">
+            <i class="glyphicon glyphicon-chevron-left"></i>
+            Back
+        </a>
         <h3 id="title"></h3>
         <span id="genres"></span><br/><br/>
         <div id="rating">
             <div id="unrated">
                 <label>You haven't rated this movie yet</label>
                 <input type="hidden" id="mId">
-                <fieldset>
-                    <input name="rating" class="unfilled-star" type="image" value="1" src="img/star_not_filled.png">
-                    <input name="rating" class="unfilled-star" type="image" value="2" src="img/star_not_filled.png">
-                    <input name="rating" class="unfilled-star" type="image" value="3" src="img/star_not_filled.png">
-                    <input name="rating" class="unfilled-star" type="image" value="4" src="img/star_not_filled.png">
-                    <input name="rating" class="unfilled-star" type="image" value="5" src="img/star_not_filled.png">
+                <fieldset id="ratingFieldSet">
+                    <input name="rating" class="unfilled-star animated bounceIn" type="image" value="1"
+                           src="img/star_not_filled.png">
+                    <input name="rating" class="unfilled-star animated bounceIn" type="image" value="2"
+                           src="img/star_not_filled.png">
+                    <input name="rating" class="unfilled-star animated bounceIn" type="image" value="3"
+                           src="img/star_not_filled.png">
+                    <input name="rating" class="unfilled-star animated bounceIn" type="image" value="4"
+                           src="img/star_not_filled.png">
+                    <input name="rating" class="unfilled-star animated bounceIn" type="image" value="5"
+                           src="img/star_not_filled.png">
                 </fieldset>
             </div>
             <div id="rated"></div>
         </div>
+    </div>
+    <div id="myRatings" style="display: none">
+        <table class="table" id="myRatingsTable">
+        </table>
     </div>
 </div>
 </body>

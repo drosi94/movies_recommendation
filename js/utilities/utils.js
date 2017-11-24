@@ -1,8 +1,23 @@
 class Utils {
-    static urlChange(id, title, url) {
+    static urlChange(id, title, url, activeLink) {
         window.history.pushState(id, title, `#/${url}`);
 
         document.getElementById('pageTitle').innerHTML = document.title = title;
+
+        if (activeLink) {
+            this.activateLink(activeLink)
+        }
+    }
+
+    static activateLink(activeLink) {
+        const activeLis = document.querySelectorAll('li.active');
+        console.log(activeLis);
+        activeLis.forEach(li => {
+           li.classList.remove('active');
+        });
+
+        console.log(activeLink);
+        activeLink.parentNode.classList += " active"
 
     }
 
@@ -20,15 +35,22 @@ class Utils {
         }
     }
 
-    static setUserRating(mId, value) {
+    static setUserRating(mId, title, value) {
         let userRatings = Utils.getUserRatings();
         if (!userRatings) {
             userRatings = [];
         }
-        userRatings.push(new UserRating(mId, value));
+        userRatings.push(new UserRating(mId, title, value));
 
         localStorage.setItem('userRatings', JSON.stringify(userRatings));
     }
+
+    static removeFromUserRatings(mId) {
+        let userRatings = Utils.getUserRatings();
+        userRatings.splice(userRatings.findIndex((rating) => rating.mId === mId), 1);
+        localStorage.setItem('userRatings', JSON.stringify(userRatings));
+    }
+
 
     static getUserRatings() {
         let userRatings = localStorage.getItem('userRatings');
@@ -85,5 +107,9 @@ class Utils {
 
     static sortArrayByKey(array, key, asc) {
         return array.sort((a, b) => ( asc ? a[key] - b[key] : b[key] - a[key]));
+    }
+
+    static removeNode(node) {
+        node.parentElement.removeChild(node);
     }
 }
