@@ -25,7 +25,7 @@ const onLoad = () => {
 
     movieCaller = new MoviesAPICaller();
     if (!recommendationWorker) {
-        recommendationWorker = new Worker('/movies_recommendation/js/worker/recommendation_worker.js');
+        recommendationWorker = new Worker('./js/worker/recommendation_worker.js');
     }
 
     initializeViewElements();
