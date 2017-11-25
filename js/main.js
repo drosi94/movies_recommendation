@@ -287,6 +287,7 @@ const showMyRatings = (parentElement) => {
             parentElement.appendChild(tbody);
         }
     }
+
 };
 
 
