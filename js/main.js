@@ -289,6 +289,7 @@ const showMyRatings = (parentElement) => {
     }
 };
 
+
 const parseUrl = (e) => {
     let url = e.target.hash;
     if (url.includes('/movies') || url === '') {
