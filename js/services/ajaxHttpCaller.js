@@ -49,9 +49,10 @@ class AjaxHttpCaller {
     onReadyChange(callback) {
         return () => {
             try {
+                // When http state is done(4)
                 if (this.xmlHttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
                     if (this.xmlHttp.status === HTTP_STATUS.OK || this.xmlHttp.status === HTTP_STATUS.CREATED) {
-                        return callback(null, JSON.parse(this.xmlHttp.responseText)) // No error occurred, pass object
+                        return callback(null, JSON.parse(this.xmlHttp.responseText)) // No error occurred, pass the object
                     } else if (this.xmlHttp.status === HTTP_STATUS.NOT_FOUND) {
                         return callback('Resource not found');
                     } else if (this.xmlHttp.status === HTTP_STATUS.BAD_REQUEST) {

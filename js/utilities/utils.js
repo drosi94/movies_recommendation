@@ -11,12 +11,10 @@ class Utils {
 
     static activateLink(activeLink) {
         const activeLis = document.querySelectorAll('li.active');
-        console.log(activeLis);
         activeLis.forEach(li => {
            li.classList.remove('active');
         });
 
-        console.log(activeLink);
         activeLink.parentNode.classList += " active"
 
     }

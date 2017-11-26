@@ -20,7 +20,7 @@ let recommendedMoviesDiv;
 let recommendationDiv;
 let recommendationWorker;
 
-
+// On window load
 const onLoad = () => {
 
     movieCaller = new MoviesAPICaller();
@@ -43,6 +43,7 @@ const onLoad = () => {
     backButton.addEventListener('click', parseUrl, false);
 };
 
+// On searcch form submit
 const submitSearchForm = (e) => {
     e.preventDefault();
     Utils.removeAllChildsFromElement(errorSearchFormMessage);
@@ -61,9 +62,9 @@ const submitSearchForm = (e) => {
     getMovies(keyword)
 };
 
-// Get movies by keyword and show the result
+// Get movies by keyword
 const getMovies = (keyword) => {
-    Utils.urlChange('movies', 'Movies', 'movies?search=' + keyword, showMoviesLink[1]);
+    Utils.urlChange('movies', 'Movies', 'movies?search=' + encodeURI(keyword), showMoviesLink[1]);
     // Search movies by keyword
     movieCaller.getMoviesByKeyword(keyword, (err, movies) => {
         if (err) {
@@ -80,7 +81,7 @@ const getMovies = (keyword) => {
     });
 };
 
-// Show movies in parentElement
+// Show movies into parentElement
 const showMovies = (parentElement, movies) => {
     Utils.removeAllChildsFromElement(parentElement);
     Utils.showElement(parentElement);
@@ -130,7 +131,7 @@ const showMovies = (parentElement, movies) => {
     }
 };
 
-//Go to movie details when click on a movie title
+// On click movie title, go to movie details
 const onClickMovie = (e) => {
     movieCaller.getMovieById(e.target.getAttribute('movie-id'), (err, movie) => {
         if (err) {
@@ -145,6 +146,7 @@ const onClickMovie = (e) => {
     });
 };
 
+// Show movie details
 const showMovieDetails = (movie) => {
     Utils.hideElement(myRatingsDiv);
     Utils.urlChange('movieDetails', 'Movie Details', `movie/${movie['movieId']}`, showMoviesLink[1]);
@@ -168,13 +170,13 @@ const showMovieDetails = (movie) => {
     }
 };
 
+// Show recommendations block
 const showRecommendations = (parentElement, userRatings) => {
     Utils.removeAllChildsFromElement(parentElement);
     Utils.showElement(recommendationDiv);
     Utils.showElement(parentElement);
     Utils.showElement(loadingRecommendedMovies);
     findRecommendations(userRatings, (recommendations) => {
-        console.log(recommendations);
         const moviesDiv = document.createElement('div');
         parentElement.innerHTML = `<thead class="blue-grey lighten-4" style="width: 50%">
                 <tr>
@@ -211,21 +213,26 @@ const showRecommendations = (parentElement, userRatings) => {
     });
 };
 
+// Find recommendations from cache or worker.
 const findRecommendations = (currentUserRatings, cb) => {
     if (currentUserRatings) {
         const latestRecommendations = Utils.getLatestRecommendations();
         const movieListRatings = currentUserRatings.map(it => it.mId);
 
-        // If latestRecommendations object is already defined and current user rating are not changed, return the saved object
+        // If latestRecommendations object is already defined and current user rating are not changed, return the cached recommendations
         if (latestRecommendations && Utils.arraysEqual(latestRecommendations.movieList, movieListRatings)) {
             return cb(latestRecommendations.recommendations);
         }
 
+        // Send message to worket to find the recommendations for the current user
         recommendationWorker.postMessage(JSON.stringify({
             movieListRatings: movieListRatings,
             currentUserRatings: currentUserRatings
         }));
+
+        // When worker return the recommendations, cache it and call the callback function.
         recommendationWorker.onmessage = (e) => {
+            console.log('Message received from the recommendation worker');
             Utils.setLatestRecommendations(movieListRatings, e.data);
             return cb(e.data);
         }
@@ -233,64 +240,7 @@ const findRecommendations = (currentUserRatings, cb) => {
 
 };
 
-const showMyRatings = (parentElement) => {
-    parentElement.innerHTML = `<thead class="blue-grey lighten-4">
-                <tr>
-                    <th width="5%">#</th>
-                    <th width="70%">Title</th>
-                    <th width="20%">Rating</th>
-                    <th width="5%">Action</th>
-                </tr>
-                </thead>`
-
-    const tbody = document.createElement('tbody');
-
-    const myRatingMovies = Utils.getUserRatings();
-
-    if (myRatingMovies) {
-        for (let i = 0; i < myRatingMovies.length; i++) {
-            const tr = document.createElement('tr');
-            const th = document.createElement('th');
-            const tdTitle = document.createElement('td');
-            const tdRating = document.createElement('td');
-            const tdMore = document.createElement('td');
-
-            th.appendChild(document.createTextNode(myRatingMovies[i]['mId']));
-            th.setAttribute('scope', 'row');
-
-            tdTitle.appendChild(document.createTextNode(myRatingMovies[i]['title']));
-
-            for (let j = 0; j < myRatingMovies[i]['rating']; j++) {
-                const starImg = document.createElement('img');
-                starImg.src = 'img/star_filled.png';
-                starImg.className = 'filled-star';
-
-                tdRating.appendChild(starImg);
-            }
-
-            const deleteSpan = document.createElement('span');
-            deleteSpan.classList += 'clickable';
-            const iElement = document.createElement('i');
-            iElement.classList += 'fa fa-times';
-            iElement.style.pointerEvents = 'none';
-            deleteSpan.appendChild(iElement);
-            deleteSpan.setAttribute('movie-id', myRatingMovies[i]['mId']);
-            deleteSpan.addEventListener('click', onDeleteRating, false);
-            tdMore.appendChild(deleteSpan);
-
-            tr.appendChild(th);
-            tr.appendChild(tdTitle);
-            tr.appendChild(tdRating);
-            tr.appendChild(tdMore);
-
-            tbody.appendChild(tr);
-            parentElement.appendChild(tbody);
-        }
-    }
-
-};
-
-
+// Parse hash url
 const parseUrl = (e) => {
     let url = e.target.hash;
     if (url.includes('/movies') || url === '') {
@@ -342,7 +292,7 @@ const parseUrl = (e) => {
     }
 };
 
-
+// Initialize the elements.
 const initializeViewElements = () => {
     movieSearchDiv = document.getElementById('moviesSearch');
     searchForm = document.getElementById('searchForm');

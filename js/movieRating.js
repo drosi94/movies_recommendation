@@ -59,8 +59,3 @@ const showMovieUserRating = (mId) => {
         Utils.hideElement(ratedDiv);
     }
 };
-
-const onDeleteRating = (e) => {
-    Utils.removeNode(e.target.parentNode.parentNode); // Remove tr
-    Utils.removeFromUserRatings(e.target.getAttribute("movie-id"));
-};
