@@ -176,9 +176,13 @@ const showRecommendations = (parentElement, userRatings) => {
     Utils.showElement(recommendationDiv);
     Utils.showElement(parentElement);
     Utils.showElement(loadingRecommendedMovies);
-    findRecommendations(userRatings, (recommendations) => {
-        const moviesDiv = document.createElement('div');
-        parentElement.innerHTML = `<thead class="blue-grey lighten-4" style="width: 50%">
+    findRecommendations(userRatings, (err, recommendations) => {
+        Utils.hideElement(loadingRecommendedMovies);
+        if (err) {
+            parentElement.innerHTML = 'No recommendations found :(';
+        } else {
+            const moviesDiv = document.createElement('div');
+            parentElement.innerHTML = `<thead class="blue-grey lighten-4" style="width: 50%">
                 <tr>
                     <th width="5%">#</th>
                     <th width="40%">Title</th>
@@ -186,30 +190,31 @@ const showRecommendations = (parentElement, userRatings) => {
                 </tr>
                 </thead>`
 
-        const tbody = document.createElement('tbody');
-        recommendations.forEach(rec => {
-            const tr = document.createElement('tr');
-            const th = document.createElement('th');
-            const tdTitle = document.createElement('td');
-            const tdMore = document.createElement('td');
+            const tbody = document.createElement('tbody');
+            recommendations.forEach(rec => {
+                const tr = document.createElement('tr');
+                const th = document.createElement('th');
+                const tdTitle = document.createElement('td');
+                const tdMore = document.createElement('td');
 
-            th.appendChild(document.createTextNode(rec['mId']));
-            th.setAttribute('scope', 'row');
-            tdTitle.appendChild(document.createTextNode(rec['title']));
-            tdMore.appendChild(document.createTextNode('Details'));
-            tdMore.classList += 'movie-details';
-            tdMore.setAttribute('movie-id', rec['mId']);
-            tdMore.addEventListener('click', onClickMovie, false);
+                th.appendChild(document.createTextNode(rec['mId']));
+                th.setAttribute('scope', 'row');
+                tdTitle.appendChild(document.createTextNode(rec['title']));
+                tdMore.appendChild(document.createTextNode('Details'));
+                tdMore.classList += 'movie-details';
+                tdMore.setAttribute('movie-id', rec['mId']);
+                tdMore.addEventListener('click', onClickMovie, false);
 
-            tr.appendChild(th);
-            tr.appendChild(tdTitle);
-            tr.appendChild(tdMore);
+                tr.appendChild(th);
+                tr.appendChild(tdTitle);
+                tr.appendChild(tdMore);
 
-            tbody.appendChild(tr);
-            parentElement.appendChild(tbody);
-        });
-        Utils.hideElement(loadingRecommendedMovies);
-        parentElement.appendChild(moviesDiv);
+                tbody.appendChild(tr);
+                parentElement.appendChild(tbody);
+            });
+            parentElement.appendChild(moviesDiv);
+        }
+
     });
 };
 
@@ -221,7 +226,7 @@ const findRecommendations = (currentUserRatings, cb) => {
 
         // If latestRecommendations object is already defined and current user rating are not changed, return the cached recommendations
         if (latestRecommendations && Utils.arraysEqual(latestRecommendations.movieList, movieListRatings)) {
-            return cb(latestRecommendations.recommendations);
+            return cb(null,  latestRecommendations.recommendations);
         }
 
         // Send message to worket to find the recommendations for the current user
@@ -233,8 +238,13 @@ const findRecommendations = (currentUserRatings, cb) => {
         // When worker return the recommendations, cache it and call the callback function.
         recommendationWorker.onmessage = (e) => {
             console.log('Message received from the recommendation worker');
-            Utils.setLatestRecommendations(movieListRatings, e.data);
-            return cb(e.data);
+            if (e.data.err) {
+                return cb(e.data.err);
+            } else {
+                Utils.setLatestRecommendations(movieListRatings, e.data.moviesForRecommendationWithTitle);
+                return cb(null, e.data.moviesForRecommendationWithTitle);
+            }
+
         }
     }
 

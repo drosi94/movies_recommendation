@@ -16,11 +16,10 @@ onmessage = (e) => {
     let movieListRatings = data.movieListRatings;
     let currentUserRatings = data.currentUserRatings;
     getRecommendations(movieListRatings, currentUserRatings, (err, moviesForRecommendationWithTitle) => {
-        console.log('Posting message back to main script');
         if(err) {
-            console.log("No recommendations found");
+            postMessage({err: err, moviesForRecommendationWithTitle: null});
         } else {
-            postMessage(moviesForRecommendationWithTitle);
+            postMessage({err: null, moviesForRecommendationWithTitle: moviesForRecommendationWithTitle});
         }
 
     })
@@ -42,7 +41,7 @@ const getRecommendations = (movieListRatings, currentUserRatings, cb) => {
             currentUserRatings = currentUserRatings.map((it) => parseFloat(it.rating));
             const scorePerUserId = [];
             Object.keys(moviesRatingsByUser).forEach(function (userId) {
-                if (moviesRatingsByUser[userId] && moviesRatingsByUser[userId].length > 0 && currentUserRatings.length - moviesRatingsByUser[userId].length <= 2) {
+                if (moviesRatingsByUser[userId] && currentUserRatings.length === moviesRatingsByUser[userId].length) {
                     const userRatings = moviesRatingsByUser[userId].map((it) => parseFloat(it.rating));
 
                     const score = getPearsonCorrelation(currentUserRatings, userRatings);
