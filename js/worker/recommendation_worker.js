@@ -51,8 +51,8 @@ const getRecommendations = (movieListRatings, currentUserRatings, cb) => {
                     });
                 }
             });
-            // Sort by score ascending and get 3 most similar with current user
-            const similarUserRatings = Utils.sortArrayByKey(scorePerUserId, 'score', true).slice(0, 3);
+            // Sort by score descending and get 3 most similar with current user
+            const similarUserRatings = Utils.sortArrayByKey(scorePerUserId, 'score', false).slice(0, 3);
 
             if(similarUserRatings.length === 0) {
                 return cb('Not Found', null)
@@ -113,8 +113,8 @@ const getMovieRecommendations = (userRating, movieListRatings, cb) => {
             console.error(err);
         } else {
             movieRatings.forEach((movieRating) => {
-                // If movie has rate >=4,is not included at current user ratings and is not included in current recommendations.
-                if (movieRating.rating >= 4 && !movieListRatings.includes(movieRating.movieId.toString()) && !moviesUserRecommendation.includes(movieRating)) {
+                // If movie has rate =5 , is not included at current user ratings and not in current recommendations.
+                if (movieRating.rating === 5 && !movieListRatings.includes(movieRating.movieId.toString()) && !moviesUserRecommendation.includes(movieRating)) {
                     moviesUserRecommendation.push(movieRating);
                 }
             });
