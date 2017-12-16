@@ -20,30 +20,40 @@ let recommendedMoviesDiv;
 let recommendationDiv;
 let recommendationWorker;
 
-// On window load
+// On window's load
 const onLoad = () => {
 
     movieCaller = new MoviesAPICaller();
+
+    // Load worker, if it is not already
     if (!recommendationWorker) {
         recommendationWorker = new Worker('./js/worker/recommendation_worker.js');
     }
 
+    // Initialize the view elements variables
     initializeViewElements();
+
+    // Parse the url by hash value (#..)
     parseUrl({
         target: {
             hash: window.location.hash
         }
     });
 
+    // When search form's submit button pushed.
     searchForm.addEventListener('submit', submitSearchForm);
+
+    // Menu listenrs
     showMoviesLink.forEach((element) => {
         element.addEventListener('click', parseUrl, false);
     });
     showMyRatingsLink.addEventListener('click', parseUrl, false);
+    //
+
     backButton.addEventListener('click', parseUrl, false);
 };
 
-// On searcch form submit
+// On search form submit
 const submitSearchForm = (e) => {
     e.preventDefault();
     Utils.removeAllChildsFromElement(errorSearchFormMessage);
