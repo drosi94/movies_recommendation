@@ -83,10 +83,17 @@ const getMovies = (keyword) => {
             Utils.hideElement(searchResultsDiv);
             errorSearchFormMessage.appendChild(document.createTextNode(err));
         } else {
-            Utils.showElement(searchResultsDiv);
-            Utils.hideElement(errorSearchFormDiv);
-            Utils.setLatestResults(keyword, movies);
-            showMovies(searchTableResult, movies);
+            if(movies.length > 0) {
+                Utils.showElement(searchResultsDiv);
+                Utils.hideElement(errorSearchFormDiv);
+                Utils.setLatestResults(keyword, movies);
+                showMovies(searchTableResult, movies);
+            } else {
+                Utils.showElement(errorSearchFormDiv);
+                Utils.hideElement(searchResultsDiv);
+                errorSearchFormMessage.appendChild(document.createTextNode("No movies found"));
+            }
+
         }
     });
 };
