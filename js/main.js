@@ -23,7 +23,7 @@ let recommendationWorker;
 // On window's load
 const onLoad = () => {
 
-    movieCaller = new MoviesAPICaller('http://localhost:8081');
+    movieCaller = new MoviesAPICaller('http://35.195.154.195:8081');
 
     // Load worker, if it is not already
     if (!recommendationWorker) {
