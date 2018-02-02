@@ -12,7 +12,7 @@ let movieCaller;
 onmessage = (e) => {
     console.log('Message received from main script');
     const data = JSON.parse(e.data);
-    movieCaller = new MoviesAPICaller();
+    movieCaller = new MoviesAPICaller('http://35.195.154.195:8081');
     let movieListRatings = data.movieListRatings;
     let currentUserRatings = data.currentUserRatings;
     getRecommendations(movieListRatings, currentUserRatings, (err, moviesForRecommendationWithTitle) => {

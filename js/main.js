@@ -23,7 +23,7 @@ let recommendationWorker;
 // On window's load
 const onLoad = () => {
 
-    movieCaller = new MoviesAPICaller();
+    movieCaller = new MoviesAPICaller('http://localhost:8081');
 
     // Load worker, if it is not already
     if (!recommendationWorker) {
@@ -277,8 +277,8 @@ const parseUrl = (e) => {
         Utils.hideElement(myRatingsDiv);
         Utils.urlChange('movies', 'Movies', 'movies', showMoviesLink[1]);
         const userRatings = Utils.getUserRatings();
-        // If user has rated at least 3 movies, show recommendations
-        if (userRatings && userRatings.length > 3) {
+        // If user has rated at least 1 movies, show recommendations
+        if (userRatings && userRatings.length > 1) {
             showRecommendations(recommendedMoviesDiv, userRatings);
         }
         const latestRecommendations = Utils.getLatestRecommendations();
